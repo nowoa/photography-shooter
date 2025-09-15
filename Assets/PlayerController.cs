@@ -20,10 +20,15 @@ public class PlayerController : MonoBehaviour
 
     [FormerlySerializedAs("Height")] public int imgHeight;
 
+    private float _viewFinderWidth = 1920f;
+    public int ViewFinderChangeSpeed = 100;
+    public RectTransform ViewfinderImage;
+    private int _imageWidth = 1920 / 4;
+    private int _imageHeight = 1080 / 4;
+
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
-        
         Cursor.lockState = CursorLockMode.Locked;
         _camera = Camera.main;
         RenderCamera.enabled = false;
@@ -35,17 +40,21 @@ public class PlayerController : MonoBehaviour
     {
         Move();
         Look();
-
-        if (Input.GetKeyDown(KeyCode.Space))
-        {
-            SetAspectRatio();
-        }
         if (Input.GetKeyDown(KeyCode.Mouse0))
         {
             TakePicture();
         }
 
-        
+        UpdateViewfinder();
+
+    }
+
+    private void UpdateViewfinder()
+    {
+        _viewFinderWidth += Input.mouseScrollDelta.y * ViewFinderChangeSpeed * Time.deltaTime;
+        _viewFinderWidth = Mathf.Clamp(_viewFinderWidth, 800, 1920);
+        ViewfinderImage.sizeDelta = new Vector2(_viewFinderWidth, 1080);
+        _imageWidth = (int)_viewFinderWidth / 4;
     }
 
     private void Move()
@@ -83,6 +92,7 @@ public class PlayerController : MonoBehaviour
 
     private void SetAspectRatio()
     {
+        
         // cleanup old textures if they exist
         /*if (pictureTexture != null)
         {
@@ -94,23 +104,23 @@ public class PlayerController : MonoBehaviour
             temp.Release();
         }
         
-        pictureTexture = new Texture2D(imgWidth, imgHeight);
-        Debug.Log(pictureTexture);
+        pictureTexture = new Texture2D(_imageWidth,_imageHeight);
+        picture.rectTransform.sizeDelta = new Vector2(_imageWidth, _imageHeight);
         picture.texture = pictureTexture;
-        picture.rectTransform.sizeDelta = new Vector2(imgWidth, imgHeight);
-        temp = RenderTexture.GetTemporary(imgWidth, imgHeight, 24, GraphicsFormat.R8G8B8A8_SRGB);
+        temp = RenderTexture.GetTemporary(_imageWidth, _imageHeight, 24, GraphicsFormat.R8G8B8A8_SRGB);
         RenderCamera.targetTexture = temp;
-        TakePicture();
     }
 
     
     private void TakePicture()
     {
+        SetAspectRatio();
+        
         RenderCamera.transform.position = _camera.transform.position;
         RenderCamera.transform.rotation = _camera.transform.rotation;
         RenderCamera.Render();
         RenderTexture.active = RenderCamera.targetTexture;
-        pictureTexture.ReadPixels(new Rect(0,0,imgWidth,imgHeight),0,0);
+        pictureTexture.ReadPixels(new Rect(0,0,_imageWidth,_imageHeight),0,0);
         pictureTexture.Apply();
         RenderTexture.active = null;
         
